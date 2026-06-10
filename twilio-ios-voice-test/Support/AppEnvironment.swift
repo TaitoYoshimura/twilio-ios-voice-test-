@@ -42,9 +42,12 @@ struct AppEnvironment {
 
         if let envFileValues = loadBundledEnv(bundle: bundle) {
             values.merge(envFileValues) { _, fileValue in fileValue }
+            PoCLogger.info(".env loaded from app bundle")
+        } else {
+            PoCLogger.info(".env not found in app bundle; using process environment only")
         }
 
-        return AppEnvironment(
+        let environment = AppEnvironment(
             tokenEndpoint: values.envValue("TOKEN_ENDPOINT"),
             defaultIdentity: values.envValue("DEFAULT_IDENTITY", default: "ios_poc_user"),
             defaultToNumber: values.envValue("DEFAULT_TO_NUMBER"),
@@ -54,6 +57,18 @@ struct AppEnvironment {
             apiKeySecret: values.envValue("API_KEY_SECRET", fallback: "TWILIO_API_KEY_SECRET"),
             twimlAppSID: values.envValue("TWIML_APP_SID", fallback: "TWILIO_TWIML_APP_SID")
         )
+
+        PoCLogger.info(
+            "config tokenEndpoint=\(PoCLogger.present(environment.tokenEndpoint)) " +
+            "localCredentials=\(environment.hasLocalTokenCredentials ? "set" : "missing") " +
+            "accountSID=\(PoCLogger.maskedSID(environment.accountSID)) " +
+            "apiKeySID=\(PoCLogger.maskedSID(environment.apiKeySID)) " +
+            "twimlAppSID=\(PoCLogger.maskedSID(environment.twimlAppSID)) " +
+            "defaultTo=\(PoCLogger.present(environment.defaultToNumber)) " +
+            "callerID=\(PoCLogger.present(environment.callerID))"
+        )
+
+        return environment
     }
 
     private static func loadBundledEnv(bundle: Bundle) -> [String: String]? {

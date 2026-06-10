@@ -32,6 +32,13 @@ struct TwilioVoiceAccessTokenFactory {
     func makeAccessToken(identity: String, now: Date = Date()) throws -> String {
         let issuedAt = Int(now.timeIntervalSince1970)
         let expiresAt = issuedAt + Int(ttl)
+        PoCLogger.info(
+            "creating local access token identity=\(identity) " +
+            "accountSID=\(PoCLogger.maskedSID(accountSID)) " +
+            "apiKeySID=\(PoCLogger.maskedSID(apiKeySID)) " +
+            "twimlAppSID=\(PoCLogger.maskedSID(twimlAppSID)) " +
+            "ttl=\(Int(ttl))s"
+        )
 
         let header: [String: Any] = [
             "alg": "HS256",
@@ -68,6 +75,7 @@ struct TwilioVoiceAccessTokenFactory {
             using: key
         )
 
+        PoCLogger.info("local access token created exp=\(expiresAt)")
         return "\(signingInput).\(Data(signature).base64URLEncodedString())"
     }
 
