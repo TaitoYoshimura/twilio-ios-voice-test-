@@ -21,7 +21,9 @@ final class VoiceCallService: NSObject {
     var onEvent: ((CallEvent) -> Void)?
 
     private var activeCall: Call?
-    private let audioDevice = DefaultAudioDevice()
+    // ExampleAVAudioEngineDevice (Twilio official sample, Objective-C) mixes a
+    // bundled audio file into both the call uplink and local playback.
+    private let audioDevice = ExampleAVAudioEngineDevice()
     private var isSpeakerEnabled = true
 
     override init() {
@@ -70,22 +72,31 @@ final class VoiceCallService: NSObject {
         activeCall?.isMuted = muted
     }
 
+    func playAudioFile() {
+        guard hasActiveCall else {
+            PoCLogger.info("playAudioFile ignored because activeCall is nil")
+            return
+        }
+
+        PoCLogger.info("playAudioFile requested (OutboundAudio.caf)")
+        audioDevice.playMusic()
+    }
+
     func setSpeakerEnabled(_ enabled: Bool) {
         isSpeakerEnabled = enabled
         applyAudioRoute()
     }
 
     private func applyAudioRoute() {
-        audioDevice.block = { [isSpeakerEnabled] in
-            DefaultAudioDevice.DefaultAVAudioSessionConfigurationBlock()
-            do {
-                try AVAudioSession.sharedInstance().overrideOutputAudioPort(isSpeakerEnabled ? .speaker : .none)
-                PoCLogger.info("audio route updated speaker=\(isSpeakerEnabled)")
-            } catch {
-                PoCLogger.error("failed to update audio route: \(error.localizedDescription)")
-            }
+        // ExampleAVAudioEngineDevice owns the AVAudioSession configuration, so
+        // only the output-port override is applied here (DefaultAudioDevice's
+        // `block` mechanism does not exist on the custom device).
+        do {
+            try AVAudioSession.sharedInstance().overrideOutputAudioPort(isSpeakerEnabled ? .speaker : .none)
+            PoCLogger.info("audio route updated speaker=\(isSpeakerEnabled)")
+        } catch {
+            PoCLogger.error("failed to update audio route: \(error.localizedDescription)")
         }
-        audioDevice.block()
     }
 
     private func clearActiveCall(disconnectedWithError error: Error?) {

@@ -160,6 +160,14 @@ final class CallViewModel: ObservableObject {
         callService.disconnect()
     }
 
+    var canPlayAudioFile: Bool {
+        phase == .connected
+    }
+
+    func playAudioFile() {
+        callService.playAudioFile()
+    }
+
     private func makeAccessTokenProvider() throws -> AccessTokenProviding {
         let trimmedEndpoint = tokenEndpoint.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedEndpoint.isEmpty {

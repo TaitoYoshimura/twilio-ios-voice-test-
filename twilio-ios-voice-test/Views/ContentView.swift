@@ -59,6 +59,13 @@ struct ContentView: View {
                         Label("Mute", systemImage: "mic.slash.fill")
                     }
                     .disabled(!viewModel.canHangUp)
+
+                    Button {
+                        viewModel.playAudioFile()
+                    } label: {
+                        Label("Play Audio File", systemImage: "music.note")
+                    }
+                    .disabled(!viewModel.canPlayAudioFile)
                 }
 
                 Section("Status") {
