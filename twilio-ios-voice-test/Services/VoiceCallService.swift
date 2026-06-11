@@ -42,8 +42,11 @@ final class VoiceCallService: NSObject {
             }
 
             builder.params = params
-            builder.uuid = UUID()
-            PoCLogger.info("ConnectOptions prepared uuid=\(builder.uuid?.uuidString ?? "nil") params=\(params.keys.sorted())")
+            // Do NOT set builder.uuid here: it is a CallKit-only property.
+            // Setting it makes the SDK skip starting the audio device and wait
+            // for CXProviderDelegate.didActivateAudioSession, which this app
+            // does not implement — the call connects but stays silent.
+            PoCLogger.info("ConnectOptions prepared params=\(params.keys.sorted())")
         }
 
         let call = TwilioVoiceSDK.connect(options: connectOptions, delegate: self)
@@ -74,6 +77,7 @@ final class VoiceCallService: NSObject {
 
     private func applyAudioRoute() {
         audioDevice.block = { [isSpeakerEnabled] in
+            DefaultAudioDevice.DefaultAVAudioSessionConfigurationBlock()
             do {
                 try AVAudioSession.sharedInstance().overrideOutputAudioPort(isSpeakerEnabled ? .speaker : .none)
                 PoCLogger.info("audio route updated speaker=\(isSpeakerEnabled)")
