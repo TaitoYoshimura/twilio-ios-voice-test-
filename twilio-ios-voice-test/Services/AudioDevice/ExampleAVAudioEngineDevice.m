@@ -380,9 +380,9 @@ static size_t kMaximumFramesPerBuffer = 3072;
     }
 
     NSString *resourceName = [NSString stringWithFormat:@"signal_sound_%ld", (long)soundID];
-    NSURL *url = [[NSBundle mainBundle] URLForResource:resourceName withExtension:@"m4a"];
+    NSURL *url = [[NSBundle mainBundle] URLForResource:resourceName withExtension:@"caf"];
     if (!url) {
-        NSLog(@"Signal sound resource not found: %@.m4a", resourceName);
+        NSLog(@"Signal sound resource not found: %@.caf", resourceName);
     }
 
     return url;
