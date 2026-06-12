@@ -72,14 +72,19 @@ final class VoiceCallService: NSObject {
         activeCall?.isMuted = muted
     }
 
-    func playAudioFile() {
+    func playSignalSound(id: Int) {
         guard hasActiveCall else {
-            PoCLogger.info("playAudioFile ignored because activeCall is nil")
+            PoCLogger.info("playSignalSound ignored because activeCall is nil")
             return
         }
 
-        PoCLogger.info("playAudioFile requested (OutboundAudio.caf)")
-        audioDevice.playMusic()
+        guard 0...3 ~= id else {
+            PoCLogger.info("playSignalSound ignored because id is out of range id=\(id)")
+            return
+        }
+
+        PoCLogger.info("playSignalSound requested id=\(id)")
+        audioDevice.playSignalSound(withID: id)
     }
 
     func setSpeakerEnabled(_ enabled: Bool) {

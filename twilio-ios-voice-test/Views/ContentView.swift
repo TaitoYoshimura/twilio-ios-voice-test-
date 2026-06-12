@@ -60,12 +60,20 @@ struct ContentView: View {
                     }
                     .disabled(!viewModel.canHangUp)
 
-                    Button {
-                        viewModel.playAudioFile()
-                    } label: {
-                        Label("Play Audio File", systemImage: "music.note")
+                    Picker("Signal Sound", selection: $viewModel.selectedSignalSoundID) {
+                        ForEach(viewModel.signalSoundIDs, id: \.self) { soundID in
+                            Text("ID \(soundID)")
+                                .tag(soundID)
+                        }
                     }
-                    .disabled(!viewModel.canPlayAudioFile)
+                    .pickerStyle(.segmented)
+
+                    Button {
+                        viewModel.playSelectedSignalSound()
+                    } label: {
+                        Label("Send Signal \(viewModel.selectedSignalSoundID)", systemImage: "waveform")
+                    }
+                    .disabled(!viewModel.canPlaySignalSound)
                 }
 
                 Section("Status") {

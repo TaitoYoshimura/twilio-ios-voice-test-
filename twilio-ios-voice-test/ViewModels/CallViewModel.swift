@@ -34,6 +34,7 @@ final class CallViewModel: ObservableObject {
             callService.setSpeakerEnabled(isSpeakerEnabled)
         }
     }
+    @Published var selectedSignalSoundID = 0
 
     private let environment: AppEnvironment
     private let callService: VoiceCallService
@@ -160,12 +161,14 @@ final class CallViewModel: ObservableObject {
         callService.disconnect()
     }
 
-    var canPlayAudioFile: Bool {
+    let signalSoundIDs = Array(0...3)
+
+    var canPlaySignalSound: Bool {
         phase == .connected
     }
 
-    func playAudioFile() {
-        callService.playAudioFile()
+    func playSelectedSignalSound() {
+        callService.playSignalSound(id: selectedSignalSoundID)
     }
 
     private func makeAccessTokenProvider() throws -> AccessTokenProviding {

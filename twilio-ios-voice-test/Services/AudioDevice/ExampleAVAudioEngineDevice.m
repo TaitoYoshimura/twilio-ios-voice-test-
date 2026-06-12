@@ -16,6 +16,9 @@ static size_t const kPreferredNumberOfChannels = 1;
 // An audio sample is a signed 16-bit integer.
 static size_t const kAudioSampleSize = 2;
 static uint32_t const kPreferredSampleRate = 48000;
+static NSInteger const kDefaultSignalSoundID = 0;
+static NSInteger const kMinimumSignalSoundID = 0;
+static NSInteger const kMaximumSignalSoundID = 3;
 
 /*
  * Calls to AudioUnitInitialize() can fail if called back-to-back after a format change or adding and removing tracks.
@@ -370,14 +373,49 @@ static size_t kMaximumFramesPerBuffer = 3072;
     _recordEngine = nil;
 }
 
-- (void)playMusic {
-    NSString *fileName = [NSString stringWithFormat:@"%@/%@", [[NSBundle mainBundle] bundlePath], @"OutboundAudio.caf"];
-    NSURL *url = [NSURL fileURLWithPath:fileName];
-    AVAudioFile *file = [[AVAudioFile alloc] initForReading:url error:nil];
+- (NSURL *)signalSoundURLForID:(NSInteger)soundID {
+    if (soundID < kMinimumSignalSoundID || soundID > kMaximumSignalSoundID) {
+        NSLog(@"Invalid signal sound id=%ld", (long)soundID);
+        return nil;
+    }
+
+    NSString *resourceName = [NSString stringWithFormat:@"signal_sound_%ld", (long)soundID];
+    NSURL *url = [[NSBundle mainBundle] URLForResource:resourceName withExtension:@"m4a"];
+    if (!url) {
+        NSLog(@"Signal sound resource not found: %@.m4a", resourceName);
+    }
+
+    return url;
+}
+
+- (AVAudioFile *)signalSoundFileForID:(NSInteger)soundID error:(NSError **)error {
+    NSURL *url = [self signalSoundURLForID:soundID];
+    if (!url) {
+        return nil;
+    }
+
+    AVAudioFile *file = [[AVAudioFile alloc] initForReading:url error:error];
+    if (!file) {
+        NSLog(@"Failed to open signal sound id=%ld error=%@", (long)soundID, error ? *error : nil);
+    }
+
+    return file;
+}
+
+- (void)playSignalSoundWithID:(NSInteger)soundID {
+    if (!self.playoutFilePlayer || !self.recordFilePlayer) {
+        NSLog(@"Cannot play signal sound. Audio players have not been created yet.");
+        return;
+    }
+
+    NSError *error = nil;
+    AVAudioFile *file = [self signalSoundFileForID:soundID error:&error];
+    if (!file) {
+        return;
+    }
 
     AVAudioPCMBuffer *buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:file.processingFormat
                                                              frameCapacity:(AVAudioFrameCount)file.length];
-    NSError *error = nil;
 
     /*
      * The sample app plays a small in size file `mixLoop.caf`, but if you are playing a bigger file, to unblock the
@@ -386,7 +424,7 @@ static size_t kMaximumFramesPerBuffer = 3072;
      */
     BOOL success = [file readIntoBuffer:buffer error:&error];
     if (!success) {
-        NSLog(@"Failed to read audio file into buffer. error = %@", error);
+        NSLog(@"Failed to read signal sound id=%ld into buffer. error = %@", (long)soundID, error);
         return;
     }
 
@@ -394,7 +432,7 @@ static size_t kMaximumFramesPerBuffer = 3072;
                                     atTime:nil
                                    options:AVAudioPlayerNodeBufferInterrupts
                          completionHandler:^{
-        NSLog(@"Upstream file player finished buffer playing");
+        NSLog(@"Signal sound local playout finished id=%ld", (long)soundID);
     }];
     [self.playoutFilePlayer play];
 
@@ -402,7 +440,7 @@ static size_t kMaximumFramesPerBuffer = 3072;
                                    atTime:nil
                                   options:AVAudioPlayerNodeBufferInterrupts
                         completionHandler:^{
-        NSLog(@"Downstream file player finished buffer playing");
+        NSLog(@"Signal sound call uplink finished id=%ld", (long)soundID);
     }];
     [self.recordFilePlayer play];
 
@@ -428,9 +466,12 @@ static size_t kMaximumFramesPerBuffer = 3072;
      * AVAudioPlayerNode -> AVAudioUnitReverb -> MainMixerNode -> Core Audio
      */
 
-    NSString *fileName = [NSString stringWithFormat:@"%@/%@", [[NSBundle mainBundle] bundlePath], @"OutboundAudio.caf"];
-    NSURL *url = [NSURL fileURLWithPath:fileName];
-    AVAudioFile *file = [[AVAudioFile alloc] initForReading:url error:nil];
+    NSError *error = nil;
+    AVAudioFile *file = [self signalSoundFileForID:kDefaultSignalSoundID error:&error];
+    if (!file) {
+        NSLog(@"Cannot attach music node without default signal sound format.");
+        return;
+    }
 
     player = [[AVAudioPlayerNode alloc] init];
     reverb = [[AVAudioUnitReverb alloc] init];
@@ -1124,4 +1165,3 @@ static OSStatus ExampleAVAudioEngineDeviceRecordCallback(void *refCon,
 }
 
 @end
-
